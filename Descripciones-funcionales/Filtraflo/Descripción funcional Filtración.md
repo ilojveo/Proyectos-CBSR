@@ -10,4 +10,7 @@
 - Tabla de intercambio Modbus TCP/IP: [DOLIFF332530_2400488](https://drive.google.com/file/d/1FPEaikLZlxMeexy2XMuhmehHPNNVOxxp/view)
 - Tabla de secuencia del Filtraflo [DOLIFF332529_24000488](https://drive.google.com/drive/folders/1xHWoJttHsTa8Bp7czAxyN-ZE2TWyheXZ)
 - Lista de E/S con equipos paquete de VWT: [1750217102-VWT-I-LI-006 - I/O List from package skids Rev-3](https://docs.google.com/spreadsheets/d/1TABNGFEBWYtetfe_67veyGEzDdMUs3IFMZzejPBs_fU/edit?gid=96208323#gid=96208323)
-- 
+
+## Descripción somera del proceso y la secuencia
+
+El propósito de esta descripción funcional es facilitar la programación en el sistema DCS 
