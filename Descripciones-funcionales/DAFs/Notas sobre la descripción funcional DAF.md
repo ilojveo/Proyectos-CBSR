@@ -186,7 +186,7 @@ Señales:
 | BR7-LS-007A | Nivel en cámara de coagulación del DAF 1A | No está activo el final de carrera BR7ZSL  0301 ni la posición de la válvula de regulación BR7ZT   0006A es cero |
 | BR7-LS-0008A | Nivel alto en el calderín BR7-V-0201A  | Alguna de las bombas BR7-P-0214A/B está en marcha |
 | BR7-PS0021A_AHH | Señal DIGITAL de alta presión en el calderín BR7-V-0201A | Siempre |
-| BR7-PS0021A_ALL | Señal DIGITAL de alta presión en el calderín BR7-V-0201A | Alguna de las bombas BR7-P-0214A/B está en marcha. La ALARMA tiene un retardo de 40 s |
+| BR7-PS0021A_ALL | Señal DIGITAL de baja presión en el calderín BR7-V-0201A | Alguna de las bombas BR7-P-0214A/B está en marcha. La ALARMA tiene un retardo de 40 s |
 
 
 
@@ -203,9 +203,9 @@ Condiciones de apertura de la válvula UV-0327A (AND):
 
 - Está en marcha el bombeo de *agua blanca* con alguna de las bombas P-0214A/B.
 
-- No hay señal PSH-021A.
+- No hay señal `BR7-PS0021A_AHH` ni `BR7-PS0021A_ALL`.
 
-- Está activado el PS-055A. 
+- Está activado el `PS0550A`. 
 
 - El DAF está en arranque o servicio.
 
@@ -219,7 +219,7 @@ Condiciones de cierre de la válvula UV-0327A (OR)
 
 - No está en marcha el bombeo de *agua blanca* con alguna de las bombas P-0214A/B.
 
-- Hay señal PSH-0021A.
+- Hay señal `BR7-PS0021A_AHH`.
 
 - No está activado el PS-055A. 
 
@@ -233,19 +233,15 @@ Condiciones de cierre de la válvula UV-0327A (OR)
 
 Condiciones de apertura de la válvula UV-0327A (AND):
 
-- Hay señal PSH-021A durante 3 seg.
+- Hay señal `BR7-PS0021A_AHH` durante 3 seg.
 
 - El DAF no está parado por el operador.
 
 Condiciones de cierre de la válvula UV-0327A (OR):
 
-- Hay señal PSH-021A durante 3 seg.
+- No hay señal `BR7-PS0021A_AHH` durante 3 seg.
 
 - El DAF está parado por el operador.
-
-
-
-
 
 
 
@@ -268,11 +264,58 @@ Cada válvulas contará con las siguientes variables internas:
 
 Durante la fase de servicio cada contador de válvula irá incrementando el contador de tiempo de espera para abrir. Cuando el contador de este tiempo de espera sea superior a la consigna de tiempo de espera para abrir (`UV032xAT_espera` > `UP201A_T_espera_valv_purga`) se levanta un bit para pedir la apertura ( `UV0323Ab_apertura`, `UV0324Ab_apertura`, `UV0325Ab_apertura` y `UV0326Ab_apertura`) y se mete en una cola.
 
-Si la bomba BR7-P-0201A está en marcha y está activo el bit `UP201_bpermisoT_espera_purga`, se abre la válvula que esté la primera de la cola y se empieza a contar el tiempo de válvula abierta (`UV0323AT_apertura`, `UV0324AT_apertura`, `UV0325AT_apertura` y `UV0326AT_apertura`). Cuando dicho tiempo sea mayor o igual a la consigna `UP201_T_apertura_valv_purga`, la válvula se cierra y se saca de la cola.
+Si está activo el bit `UP201_bpermisoT_espera_purga`, se abre la válvula que esté la primera de la cola y se empieza a contar el tiempo de válvula abierta (`UV0323AT_apertura`, `UV0324AT_apertura`, `UV0325AT_apertura` y `UV0326AT_apertura`). Cuando dicho tiempo sea mayor o igual a la consigna `UP201_T_apertura_valv_purga`, la válvula se cierra y se saca de la cola.
 
 Al finalizar el tiempo de apertura de válvula y está cerrada, se desactiva el bit `UP201_bpermisoT_espera_purga` y empieza a contar el tiempo `UP201_ctaT_espera_purga`. Cuando dicho tiempo sea mayor o igual que `UP201_csgT_espera_purga` se activa el bit `UP201_bpermisoT_espera_purga`. 
 
 Si durante la apertura de la válvula se para la bomba BR7-P-0201A, se cierra la válvula y se queda en espera hasta que vuelva a arrancar y se congela la cuenta de tiempo de válvula abierta (no se desactiva el bit `UP201_bpermisoT_espera_purga` ni se modifica la cola).
 
 Esta purga automática no está permitida durante las fases de STOP ni Standby.
+
+## Bombeo de recirculación  (BR7-P-214A/B)
+
+Como se ha dicho antes, el bombeo se arranca durante la etapa de start-up y permanece en marcha hasta la etapa de parando. La selección de la bomba que arranque puede ser según la selección del operador o para igualar los tiempos de funcionamiento. En caso de que sea la primera opción, tras un periodo de inactividad de una bomba (a consignar por el operador), se deberá dar un aviso para su arranque, al menos en manual, durante cierto tiempo de forma que se evite que un equipo que está a la intemperie esté parado durante mucho tiempo.
+
+Si el equipo que está como principal entra en fallo, el equipo de reserva entra en servicio sin modificar la secuencia. 
+
+En caso de que se active la señal `BR7-PS0021A_ALL` el equipo de reserva se pondrá en marcha. Se tendrá un selector en la pantalla para que en caso de que entre el equipo de reserva de apoyo, se pare el principal o siga en marcha.  
+
+Si la señal `BR7-PS0021A_ALL` está activa durante un tiempo determinado (a consignar por el operador, normalmente 40 seg.), se activará la alarma de paro del DAF y detiene el sistema por completo.
+
+
+
+
+
+## Dosificación de sosa y ácido
+
+### Redundancia de valores de pH
+
+En la cámara de coagulación del DAF se han colocado dos sondas de pH, BR7-AE-0058A y BR7-AE-0011A, que van al mismo transmisor, pero cada una tiene una salida analógica (se consideran 2 entradas analógicas, `BR7AT  0011A` y `BR7AT  0058A`, aunque en el Hardware Freeze esté como "*BR7AT  0058*"). 
+
+Se crearán dos variables, la media de ambos valores de pH `BR7AT  0011A_58A_mean` y el valor absoluto de la diferencia `BR7AT  0011A-58A_abs`.
+
+Normalmente se utilizará el valor medio `BR7AT  0011A_58A_mean` para ajustar el pH y determinar si hay que arrancar alguna dosificación (control del pH). 
+
+Se establecerá un control para que en caso de una discrepancia alta o por selección del operador, cuál de los valores `BR7AT  0011A` o `BR7AT  0058A`se usa para el control del pH. 
+
+En caso de hilo roto de alguno de los valores, o que se vaya a inicio o fondo de escala, se usará el otro valor (si no tiene hilo roto ni se ha ido a fondo o inicio de escala), para el control del pH.
+
+Para esta descripción, se denominará `BR7AT  0011A_58A_cntrl` al valor usado para el control del pH.
+
+Se establecerán 3 puntos de consigna para el valor absoluto de la diferencia (discrepancia): H, HH y L:
+- si `BR7AT  0011A-58A_abs BR7AT` >  `0011A-58A_abs_H` dará una alarma (warning);
+- si `BR7AT  0011A-58A_abs BR7AT` >  `0011A-58A_abs_H` dará una alarma que hará que el valor para el control del pH sea el de la sonda predeterminada por el operador. 
+
+### Control del pH
+
+Se establecen 4 puntos de consigna, 2 para arrancar/parar el ácido y 2 para arrancar/parar la sosa. 
+
+- Si `BR7AT  0011A_58A_cntrl` > `BR7AT  0011A_58A_cntrl_H_acido` se arranca la dosificación de ácido. 9
+- Si `BR7AT  0011A_58A_cntrl` < `BR7AT  0011A_58A_cntrl_L_acido` se detiene la dosificación de ácido. 7,5
+- Si `BR7AT  0011A_58A_cntrl` < `BR7AT  0011A_58A_cntrl_H_sosa` se arranca la dosificación de sosa. 6
+- Si `BR7AT  0011A_58A_cntrl` > `BR7AT  0011A_58A_cntrl_L_sosa` se detiene la dosificación de sosa. 6,5
+
+Se espera que `BR7AT  0011A_58A_cntrl_H_acido` > `BR7AT  0011A_58A_cntrl_L_acido` >  `BR7AT  0011A_58A_cntrl_L_sosa` > `BR7AT  0011A_58A_cntrl_H_sosa`
+
+Habrá dos SP para la regulación de las dosificadoras, una para el ácido y otra para la sosa, que quedarán en algún punto intermedio entre las consignas de marcha y paro de cada dosficación.
 
