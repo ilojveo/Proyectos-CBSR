@@ -11,7 +11,7 @@ El bombeo de fango del DAF arranca y para en base al nivel.
 
 
 
-Secuencia de arranque:
+## Secuencia
 
 1. Se dan condiciones para enviar agua al DAF (niveles "adecuados" en tanques previos y posteriores al DAF, están los equipos de químicos disponibles).
 2. Se da orden de marcha al DAF.
@@ -46,13 +46,35 @@ stateDiagram-v2
     Parando --> [STOP]: Fin Parada/<br/> tiempo max <br/>parada
 ```
 
-Condiciones de Paro
+### Transiciones
 
-​	
+#### Condiciones de Paro
+
+El sistema se detiene si se activa el bit la alarma DAF_ALARM que se define en la descripción funcional.
+
+- Paro de emergencia
+- Selección de operador
+- Tiempo máximo de funcionamiento
+- Alarma disparada por `BR7-PS0021A_AHH` o `BR7-PS0021A_ALL`
+- Alarma disparada por `BR7-LS-007A`
+- Alarma de alto nivel en el depósito de efluente BR7-LT-0014A_AH
+- Alarma de alto nivel en el depósito de fangos BR7-LT-0015A_AH
+- Alarma de bajo nivel disparada por `BR7-LS-0008A` (con retardo de 120 seg)
+- No se tiene disponible la rasqueta
+- No se tiene disponible ninguna bomba de recirculación (BR7-P-0214A/B)
+- No se tiene disponible el bombeo de efluente. Eso incluye la bomba (BR7-P-0204A), válvulas (BR7-LV-0014A, BR7-UV-0330, BR7-UV-0329), depósitos de destino, etc.
+- No se tiene disponible el bombeo de fangos. Esto incluye la bomba (BR7-P-0201A) y la disponibilidad del depósito BR7-T-0111.
+- Disponibilidad de la dosificación de coagulante, si está seleccionada.
+- Disponibilidad de la dosificación de poli, si está seleccionada.
+- Alarma LL del caudal de entrada BR7-FT-0054A. 
+
+<!-- A confirmar con Sam/Bélgica-->
+
+- Alarma LL o HH del pH en el tanque de coagulación `BR7AT  0011A_58A_cntrl` (`BR7AT 0011A` / `BR7AT 0058A`). 
 
 Condiciones Iniciales
 
-
+<!-- No meter las dosificación de ácido y sosa como condición inicial -->
 
 Condiciones de Marcha
 
@@ -82,10 +104,14 @@ Condiciones para la transición Start Up --> Rampa
 
 Condiciones para la transición Rampa --> Servicio
 
-
 Condiciones para la transición Servicio --> Parando
 
+#### Condiciones para la transición Parando --> Stand-by
 
+Se han de cumplir las siguientes condiciones
+
+- Se ha terminado el tiempo de rasqueta
+- Si ha arrancado el bombeo de fangos durante la fase de "parando" tiene que terminar de vaciar el depósito de fangos (`DAF_SLUDGE_Lact` < `DAF_SLUDGE_L_Parando`).s
 
 #### Start up
 
@@ -123,6 +149,16 @@ El contador `Tim_Cta_Int_FC-0006A` al llegar a 0 se resetea, y cada vez que lleg
 Una vez finaliza la cuenta `SP_Rampa_FC-0006A`, se pasa a la estapa de **Servicio**.
 
 
+
+#### Parando
+
+Durante la fase de parando se mantiene la rasqueta durante un tiempo y se vacía la cámara de fango. 
+
+Se establece un tiempo de rasqueta en marcha durante la fase "parando" (`Tim_Rasqueta_parando`). Al finalizar este tiempo la rasqueta se detiene.
+
+Si durante la fase de parando se pone en marcha el bombeo (en algún momento `DAF_SLUDGE_Lact` > `DAF_SLUDGE_H_Parando`), se espera a que el nivel llegue a su nivel más bajo.
+
+Si la rasqueta no está disponible, se salta el tiempo `Tim_Rasqueta_parando`.
 
 
 ## Notas a la instrumentación 
@@ -237,6 +273,8 @@ Condiciones de apertura de la válvula UV-0327A (AND):
 
 - El DAF no está parado por el operador.
 
+- El DAF está en la fase de "*parando*".
+
 Condiciones de cierre de la válvula UV-0327A (OR):
 
 - No hay señal `BR7-PS0021A_AHH` durante 3 seg.
@@ -284,7 +322,30 @@ Si la señal `BR7-PS0021A_ALL` está activa durante un tiempo determinado (a con
 
 
 
+## Bombeo de Efluente
 
+
+
+## Bombeo de Fangos
+
+Existirán las siguientes variables para controlar el bombeo de fangos:
+
+| TAG                  | Descripción                                             |
+| -------------------- | ------------------------------------------------------- |
+| DAF_SLUDGE_vSP       | Velocidad de la bomba                                   |
+| DAF_SLUDGE_vMax      | Velocidad máxima                                        |
+| DAF_SLUDGE_vMin      | Velocidad mínima                                        |
+| DAF_SLUDGE_Lact      | Nivel actual del depósito                               |
+| DAF_SLUDGE_LMax      | Nivel correspondiente a la velocidad máxima de la bomba |
+| DAF_SLUDGE_LMin      | Nivel correspondiente a la velocidad mínima de la bomba |
+| DAF_SLUDGE_H_Serv    | Nivel de arranque del bombeo en fase de servicio        |
+| DAF_SLUDGE_L_Serv    | Nivel de paro del bombeo en fase de servicio            |
+| DAF_SLUDGE_H_Parando | Nivel de arranque del bombeo en fase de parando         |
+| DAF_SLUDGE_L_Parando | Nivel de paro del bombeo en fase de parando             |
+
+Como se indica en la descripción de control, la velocidad de la bomba es proporcional al caudal. 
+
+Existen dos niveles de arranque y paro, un par durante la fase de "servicio" y otro durante la fase de "parando", que serán sensiblemente inferiores a éstos, ya que lo que se quiere conseguir es que se vacíe el depósito tras el paro.
 
 ## Dosificación de sosa y ácido
 
@@ -308,14 +369,42 @@ Se establecerán 3 puntos de consigna para el valor absoluto de la diferencia (d
 
 ### Control del pH
 
-Se establecen 4 puntos de consigna, 2 para arrancar/parar el ácido y 2 para arrancar/parar la sosa. 
+Se establecen 6 puntos de consigna, 2 para arrancar/parar el ácido y 2 para arrancar/parar la sosa y otros 2 para la regulación.
+
+| TAG                            | Descripción                                       |
+| ------------------------------ | ------------------------------------------------- |
+| BR7AT  0011A_58A_cntrl_H_acido | Consigna de arranque de la dosificación de ácido. |
+| BR7AT  0011A_58A_cntrl_acido   | SetPoint para el PID del ácido                    |
+| BR7AT  0011A_58A_cntrl_L_acido | Consigna de paro de la dosificación de ácido.     |
+| BR7AT  0011A_58A_cntrl_H_sosa  | Consigna de paro de la dosificación de sosa.      |
+| BR7AT  0011A_58A_cntrl_sosa    | SetPoint para el PID de la sosa                   |
+| BR7AT  0011A_58A_cntrl_L_sosa  | Consigna de arranque de la dosificación de sosa.  |
+
+ 
 
 - Si `BR7AT  0011A_58A_cntrl` > `BR7AT  0011A_58A_cntrl_H_acido` se arranca la dosificación de ácido. 9
 - Si `BR7AT  0011A_58A_cntrl` < `BR7AT  0011A_58A_cntrl_L_acido` se detiene la dosificación de ácido. 7,5
-- Si `BR7AT  0011A_58A_cntrl` < `BR7AT  0011A_58A_cntrl_H_sosa` se arranca la dosificación de sosa. 6
-- Si `BR7AT  0011A_58A_cntrl` > `BR7AT  0011A_58A_cntrl_L_sosa` se detiene la dosificación de sosa. 6,5
+- Si `BR7AT  0011A_58A_cntrl` < `BR7AT  0011A_58A_cntrl_L_sosa` se arranca la dosificación de sosa. 6
+- Si `BR7AT  0011A_58A_cntrl` > `BR7AT  0011A_58A_cntrl_H_sosa` se detiene la dosificación de sosa. 6,5
 
-Se espera que `BR7AT  0011A_58A_cntrl_H_acido` > `BR7AT  0011A_58A_cntrl_L_acido` >  `BR7AT  0011A_58A_cntrl_L_sosa` > `BR7AT  0011A_58A_cntrl_H_sosa`
+Se espera que `BR7AT  0011A_58A_cntrl_H_acido` > `BR7AT  0011A_58A_cntrl_L_acido` >  `BR7AT  0011A_58A_cntrl_H_sosa` > `BR7AT  0011A_58A_cntrl_L_sosa`
 
-Habrá dos SP para la regulación de las dosificadoras, una para el ácido y otra para la sosa, que quedarán en algún punto intermedio entre las consignas de marcha y paro de cada dosficación.
+Habrá dos SP para la regulación de las dosificadoras, una para el ácido y otra para la sosa, que quedarán en algún punto intermedio entre las consignas de marcha y paro de cada dosificación.
+
+El sistema vigilará que los ajuste de marcha/paro por pH de las dosificadoras sean consistentes, es decir, que no se pueda poner en marcha a la vez las dos dosificaciones. 
+
+## Rasqueta ()
+
+### Condiciones de arranque
+
+En funcionamiento en cada una de las siguientes etapas:
+
+- Start-up
+- Rampa
+- Servicio
+- Parando, mientras no se cumpla el tiempo de rasqueta en esta fase (`Tim_Rasqueta_parando`).
+
+### Condiciones de paro
+
+Si no está en ninguna de estas etapas, o si está en la etapa de "Parando" y se ha cumplido el tiempo (`Tim_Rasqueta_parando`).
 
