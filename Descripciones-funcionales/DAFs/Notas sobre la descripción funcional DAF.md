@@ -110,8 +110,8 @@ Condiciones para la transición Servicio --> Parando
 
 Se han de cumplir las siguientes condiciones
 
-- Se ha terminado el tiempo de rasqueta
-- Si ha arrancado el bombeo de fangos durante la fase de "parando" tiene que terminar de vaciar el depósito de fangos (`DAF_SLUDGE_Lact` < `DAF_SLUDGE_L_Parando`).s
+- Se ha terminado el tiempo de rasqueta (si la rasqueta está disponible).
+- Se ha vaciado el depósito de fangos (`DAF_SLUDGE_Lact` < `DAF_SLUDGE_L_Parando`, si el bombeo de fangos está disponible).
 
 #### Start up
 
@@ -152,11 +152,20 @@ Una vez finaliza la cuenta `SP_Rampa_FC-0006A`, se pasa a la estapa de **Servici
 
 #### Parando
 
+**PARÁMETROS**
+
+| TAG | DESCRIPCIÓN | UNIDAD | VALOR INICIAL |
+| --- | --------------- | --------- | ------ |
+| `Tim_Rasqueta_parando` | Tiempo en marcha de la rasqueta durante la fase "**Parando**" | min. | 5 |
+| `Tim_Espera_Bombeo_Efluente` | Tiempo de espera para arrancar el bombeo del efluente durante la fase "Parando" | min. | 3 |
+
+
+
 Durante la fase de parando se mantiene la rasqueta durante un tiempo y se vacía la cámara de fango. 
 
 Se establece un tiempo de rasqueta en marcha durante la fase "parando" (`Tim_Rasqueta_parando`). Al finalizar este tiempo la rasqueta se detiene.
 
-Si durante la fase de parando se pone en marcha el bombeo (en algún momento `DAF_SLUDGE_Lact` > `DAF_SLUDGE_H_Parando`), se espera a que el nivel llegue a su nivel más bajo.
+Durante la fase "parando" se pone en marcha el bombeo cuando ha transcurrido el `Time_Espera_Bombeo_Efluente` o bien se ha alcanzado el nivel mínimo para el arranque durante la fase de parada (`DAF_SLUDGE_Lact` > `DAF_SLUDGE_H_Parando` durante unos segundos) y se espera a que el nivel llegue a su nivel más bajo (`DAF_SLUDGE_Lact` < `DAF_SLUDGE_L_Parando` durante unos segundos).
 
 Si la rasqueta no está disponible, se salta el tiempo `Tim_Rasqueta_parando`.
 
@@ -342,10 +351,17 @@ Existirán las siguientes variables para controlar el bombeo de fangos:
 | DAF_SLUDGE_L_Serv    | Nivel de paro del bombeo en fase de servicio            |
 | DAF_SLUDGE_H_Parando | Nivel de arranque del bombeo en fase de parando         |
 | DAF_SLUDGE_L_Parando | Nivel de paro del bombeo en fase de parando             |
+| DAF_SLUDGE_LL        | Nivel de protección del bombeo de fangos                |
 
 Como se indica en la descripción de control, la velocidad de la bomba es proporcional al caudal. 
 
 Existen dos niveles de arranque y paro, un par durante la fase de "servicio" y otro durante la fase de "parando", que serán sensiblemente inferiores a éstos, ya que lo que se quiere conseguir es que se vacíe el depósito tras el paro.
+
+### Enclavamientos
+
+- No hay alarma de nivel HH (o como se determine, por parte de Worley) en los niveles BR7-LT-0016/17 del tanque de fangos del DAF1, BR7-T-0111.
+- No hay alarma de nivel muy bajo (`DAF_SLUDGE_Lact` < `DAF_SLUDGE_LL`).
+- 
 
 ## Dosificación de sosa y ácido
 
@@ -393,7 +409,7 @@ Habrá dos SP para la regulación de las dosificadoras, una para el ácido y otr
 
 El sistema vigilará que los ajuste de marcha/paro por pH de las dosificadoras sean consistentes, es decir, que no se pueda poner en marcha a la vez las dos dosificaciones. 
 
-## Rasqueta ()
+## Rasqueta (BR7-Z-0201A)
 
 ### Condiciones de arranque
 
