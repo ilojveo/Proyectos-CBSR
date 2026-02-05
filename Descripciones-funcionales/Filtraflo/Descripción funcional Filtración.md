@@ -168,11 +168,11 @@ Cuando se cumplen estas condiciones, al recibir la señal de marcha del bombeo (
 
 Como se indica en los documentos de descripción funcional, se realiza un PID para mantener el nivel constante. Este PID se realiza con la válvula de regulación de nivel correspondiente, BR7-LV-0037A/B.
 
-Antes de arrancar la bomba la válvula se pondrá en una posición inicial (*BR7-LV-0037A/B_pos_ini*). 
+Antes de arrancar la bomba la válvula se pondrá en una posición inicial (*BR7-LV-0037A/B_pos_ini*) y el variador arranca con una velocidad fija (`BR7-SC-00304A/B/C_ini`).
 
-El PID permanece en "*manual*" (fijando la posición de la válvula) y la válvula permanece en esta posición hasta que se recibe la señal de que el filtro ha pasado al estado de "*Producción*" (`BR7YS   0055` *Universal Digital Output 2 / PRODUCCIÓN*), donde el PID pasa a "*automático*" para mantener el nivel constante.
+Los PIDs permanecen en "*manual*" y la válvula y la velocidad del variador permanecen en su posición/velocidad inicial hasta que se recibe la señal de que el filtro ha pasado al estado de "*Producción*" (`BR7YS   0055` *Universal Digital Output 2 / PRODUCCIÓN*), donde el PID pasa a "*automático*" para mantener el nivel constante.
 
-Las posiciones de apertura máximas y mínimas estarán limitadas. 
+Las posiciones de apertura máximas y mínimas estarán limitadas, así como las velocidades de las bombas. 
 
 #### Bomba de reserva
 
@@ -301,11 +301,9 @@ Lo que viene a continuación es válido para los siguientes skids de dosificaci�
 
 Las bombas dosificadoras tienen una señal de marcha `BR7XSL` y una señal de monitorización `BR7YL`. Durante la puesta en marcha se verá si el contacto para la señal de marcha es NC (un "0" arranca la bomba y un "1" la para) o NO (un "1" arranca la bomba y un "0" la para, como ocurre normalmente con todos los motores). 
 
-La señal de monitorización de la bomba (`BR7YL`) se activa ("1") cuando el impulsor de ésta llega al final, por lo que está dando parpadeos con más tiempo desactivado que activado. Para monitorizar correctamente, habrá que tener en cuenta esto, con un temporizador que se active cuando se dé la señal de marcha `BR7XSL` y se reinicie cada vez que se active la señal de monitorización (`BR7YL`). Si el temporizador llega a su fin, será cuando se active la alarma de fallo de dosificadora por confirmación de marcha. Esta alarma detiene la marcha de la dosificadora, aunque la monitorización puede ser deshabilitada por lo que esta alarma no saltaría nunca. 
+La señal de monitorización de la bomba (`BR7YL`) se activa ("1") cuando el impulsor de ésta llega al final, por lo que está dando parpadeos con más tiempo desactivado que activado. Para monitorizar correctamente, habrá que tener en cuenta esto, con un temporizador que se active cuando se dé la señal de marcha `BR7XSL` y se reinicie cada vez que se active la señal de monitorización (`BR7YL`). Si el temporizador llega a su fin, será cuando se active la alarma de fallo de dosificadora por confirmación de marcha. Esta alarma **no detiene** la marcha de la dosificadora, aunque la monitorización puede ser deshabilitada por lo que esta alarma no saltaría nunca. 
 
-Se establecerán dos tiempos, mínimo y máximo, para escalar el tiempo de temporizador en función de la velocidad de la dosificadora (0% -> tiempo máximo, 100% -> tiempo mínimo), que se asignarán al temporizador cada vez que se reinicie el temporizador (activación de la señal de monitorización `BR7YL`). Estos parámetros se asignarán para cada dosificadora durante la puesta en marcha.
-
-Al arranque de la dosificadora siempre estará asignado el tiempo máximo para monitorización. Se tendrá una variable de número de "*golpes de bomba (pump strokes)*" de forma que mientras no se llegue a este número de impulsiones (recogidas con la señal de monitorización `BR7YL`) se mantenga el tiempo máximo de monitorización.
+En el SCADA se establecerá el tiempo máximo para que llegue la señal de impulso (BR7YL).
 
 #### Regulación
 
@@ -317,7 +315,7 @@ Al fallo de la dosificadora BR7-P-0168B, se podrá arrancar la dosificadora BR7-
 
 Existirán unas variables internas para que el sistema identifique a qué sistema está asignada la bomba de reserva. Esta asignación puede ser automática (hasta que no falla uno de los sistemas no se asigna la bomba de reserva y el primero que falla "coge" dicha bomba de reserva) o manual, de forma que se preasigna la bomba de reserva a uno de los dos sistemas y si el otro falla se queda sin dosificación.
 
-En caso de que esté preasignado a la filtración o esté en automático y no se haya asignado la bomba de reserva al DAF-3 y la dosificadora BR7-P-0168B entre en fallo, bien por el relé (`BR7YA   0168B`) o por fallo de monitorización, como se describe más arriba, se asigne la dosificadora de reserva, siempre y cuando ésta esté disponible (sin fallo de monitorización, ni fallo por su relé `BR7YA   0168B`) y esté en automático, así como las válvulas BR7-MV-0348 y BR7-MV-0349 en automático y sin fallo.
+En caso de que esté preasignado a la filtración o esté en automático y no se haya asignado la bomba de reserva al DAF-3 y la dosificadora BR7-P-0168B entre en fallo por el relé (`BR7YA   0168B`) se asigna la dosificadora de reserva, siempre y cuando ésta esté disponible (sin fallo por su relé `BR7YA   0168B`) y esté en automático, así como las válvulas BR7-MV-0348 y BR7-MV-0349 en automático y sin fallo.
 
 En ese caso, se abrirá la válvula BR7-MV-0348 (se activa la señal `BR7HSH  0348`) y al recibir la confirmación de apertura (`BR7ZSH  0348`), se activa la marcha de la dosificadora (`BR7XSL  0168C`).
 
